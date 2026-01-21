@@ -159,7 +159,7 @@ export async function generateAIReport(
             response_format: { type: 'json_object' },
             temperature: 0.4,
             // gpt-5-* uses `max_completion_tokens` (chat.completions) instead of `max_tokens`
-            max_completion_tokens: 1000,
+            max_completion_tokens: 2000,
         });
 
         const content = response.choices[0].message.content;
