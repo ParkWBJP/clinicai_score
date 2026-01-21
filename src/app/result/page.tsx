@@ -90,7 +90,7 @@ function ResultContent() {
             <div className="container" style={{ marginTop: '40px' }}>
 
                 {/* Top Section: Score & Radar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '40px' }}>
 
                     {/* Total Score */}
                     <motion.div

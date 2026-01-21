@@ -1,9 +1,12 @@
 :root {
   /* Colors */
-  --primary: #2563EB; /* Trust Blue or Deep Navy depending on preference, sticking to Blue for CTA */
+  --primary: #2563EB;
+  /* Trust Blue or Deep Navy depending on preference, sticking to Blue for CTA */
   --primary-dark: #1E40AF;
-  --bg-page: #F8F9FA; /* Light Grey Background */
-  --bg-card: #FFFFFF; /* White Card */
+  --bg-page: #F8F9FA;
+  /* Light Grey Background */
+  --bg-card: #FFFFFF;
+  /* White Card */
   --text-main: #1F2937;
   --text-sub: #6B7280;
   --border: #E5E7EB;
@@ -13,7 +16,7 @@
   /* Spacing */
   --radius-card: 16px;
   --radius-btn: 8px;
-  
+
   /* Font Families are handled by Next.js Font Optimization but these variables help custom classes */
 }
 
@@ -46,12 +49,13 @@ a {
   background: var(--bg-card);
   border-radius: var(--radius-card);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 24px;
 }
 
 .btn-primary {
-  background: var(--text-main); /* Dark Button for authority */
+  background: var(--text-main);
+  /* Dark Button for authority */
   color: white;
   padding: 12px 24px;
   border-radius: var(--radius-btn);
@@ -98,4 +102,35 @@ a {
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+/* Responsive Styles */
+.desktop-nav,
+.desktop-actions {
+  display: flex !important;
+}
+
+.mobile-menu-btn {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+
+  .desktop-nav,
+  .desktop-actions {
+    display: none !important;
+  }
+
+  .mobile-menu-btn {
+    display: block !important;
+  }
+
+  .container {
+    padding: 0 16px;
+  }
+
+  .header {
+    padding: 0 16px;
+    height: 60px;
+  }
 }

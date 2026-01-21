@@ -82,7 +82,7 @@ export default function Home() {
     };
 
     return (
-        <div className="container" style={{ padding: '60px 20px', maxWidth: '800px' }}>
+        <div className="container" style={{ padding: '40px 16px', maxWidth: '800px' }}>
             <div className="card">
                 <h1 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '32px', textAlign: 'center' }}>
                     {locale === 'ko' ? '병원 온라인 진단 시작하기' : '病院オンライン診断を開始する'}
