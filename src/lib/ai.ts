@@ -109,6 +109,7 @@ export async function generateAIReport(
     }
 
     const openai = new OpenAI({ apiKey });
+    const model = 'gpt-5-mini';
 
     const systemPrompt = `You are a professional web auditor for Clinic.ai. You analyze hospital websites to improve their patient acquisition efficiency.
     - Tone: Professional, Constructive, "Consulting Report" style. No medical advice.
@@ -150,14 +151,15 @@ export async function generateAIReport(
 
     try {
         const response = await openai.chat.completions.create({
-            model: 'gpt-5-mini',
+            model,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `${instructions}\n\nInput JSON:\n${inputJson}` },
             ],
             response_format: { type: 'json_object' },
             temperature: 0.4,
-            max_tokens: 1000,
+            // gpt-5-* uses `max_completion_tokens` (chat.completions) instead of `max_tokens`
+            max_completion_tokens: 1000,
         });
 
         const content = response.choices[0].message.content;
