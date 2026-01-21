@@ -18,44 +18,31 @@ function ResultContent() {
     const { locale } = useLanguage();
     const dict = translations[locale].result;
 
-    const jobId = searchParams.get('jobId');
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState<{ score: ScoreResult; ai: AIReport; pagesAnalyzed: number } | null>(null);
-
-    const [viewScore, setViewScore] = useState(0); // Animated display score
+    const [viewScore, setViewScore] = useState(0);
 
     useEffect(() => {
-        if (!jobId) {
-            // Fallback/Mock mode if accessed without Job ID (or redirect)
-            setError("No Job ID provided");
-            setLoading(false);
-            return;
-        }
-
-        const fetchData = async () => {
+        const stored = sessionStorage.getItem('analysisResult');
+        if (stored) {
             try {
-                const res = await fetch(`/api/status?id=${jobId}`);
-                if (!res.ok) throw new Error("Failed to fetch result");
-                const job = await res.json();
-
-                if (job.status === 'completed' && job.result) {
-                    setData(job.result);
-                    // Animate score
-                    setTimeout(() => setViewScore(job.result.score.total), 500);
-                } else {
-                    setError("Analysis not ready or failed");
-                }
-            } catch (err: any) {
-                setError(err.message);
+                const result = JSON.parse(stored);
+                setData(result);
+                // Animate score
+                setTimeout(() => setViewScore(result.score.total), 500);
+            } catch (e) {
+                setError("Failed to load result data");
             } finally {
                 setLoading(false);
             }
-        };
-
-        fetchData();
-    }, [jobId]);
+        } else {
+            // No result found (direct access?) -> Redirect to home or show error
+            // router.push('/'); 
+            setError("No analysis result found. Please try again.");
+            setLoading(false);
+        }
+    }, []);
 
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 className="animate-spin" /></div>;
     if (error) return <div className="container" style={{ padding: '80px', textAlign: 'center', color: 'red' }}>{error}</div>;

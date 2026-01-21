@@ -21,9 +21,7 @@ function LoadingContent() {
     const steps = [dict.step1, dict.step2, dict.step3, dict.step4];
 
     useEffect(() => {
-        // 1. Start Job
-        let jobId = '';
-        let intervalId: NodeJS.Timeout | undefined; // Initialize as undefined
+        let isMounted = true;
 
         const startAnalysis = async () => {
             try {
@@ -39,68 +37,57 @@ function LoadingContent() {
                     })
                 });
 
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.message || "Failed to start analysis");
+                if (!res.ok || !res.body) throw new Error("Connection failed");
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || ''; // Keep partial line in buffer
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const data = JSON.parse(line);
+
+                            if (data.type === 'progress') {
+                                if (isMounted) {
+                                    setProgress(data.value);
+                                    if (data.pagesCount) setPagesCount(data.pagesCount);
+
+                                    // Update steps based on progress
+                                    if (data.value < 40) setCurrentStep(0);
+                                    else if (data.value < 70) setCurrentStep(1);
+                                    else if (data.value < 90) setCurrentStep(2);
+                                    else setCurrentStep(3);
+                                }
+                            } else if (data.type === 'complete') {
+                                // Save result to storage to pass to Result page without large URL
+                                sessionStorage.setItem('analysisResult', JSON.stringify(data.result));
+                                router.replace('/result'); // Use replace to prevent going back to loading
+                                return;
+                            } else if (data.type === 'error') {
+                                throw new Error(data.message);
+                            }
+                        } catch (e) {
+                            console.error("Parse error", e);
+                        }
+                    }
                 }
-                const data = await res.json();
-                jobId = data.jobId;
-
-                // 2. Poll Status
-                pollStatus();
-
             } catch (err: any) {
-                console.error(err);
-                setError(err.message || 'Error occurred');
+                if (isMounted) setError(err.message || 'Error occurred');
             }
-        };
-
-        const pollStatus = () => {
-            intervalId = setInterval(async () => {
-                try {
-                    const res = await fetch(`/api/status?id=${jobId}`);
-                    if (!res.ok) {
-                        const errorData = await res.json();
-                        throw new Error(errorData.message || "Failed to fetch job status");
-                    }
-                    const job = await res.json();
-
-                    setProgress(job.progress);
-
-                    // Estimate pages count from progress (0-50% is crawling)
-                    if (job.progress <= 50) {
-                        setPagesCount(Math.floor((job.progress / 50) * 10));
-                    } else {
-                        setPagesCount(job.result?.pagesAnalyzed || 10);
-                    }
-
-                    // Map steps
-                    if (job.progress < 40) setCurrentStep(0);
-                    else if (job.progress < 70) setCurrentStep(1);
-                    else if (job.progress < 90) setCurrentStep(2);
-                    else setCurrentStep(3);
-
-                    if (job.status === 'completed') {
-                        if (intervalId) clearInterval(intervalId);
-                        router.push(`/result?jobId=${jobId}`);
-                    } else if (job.status === 'failed') {
-                        if (intervalId) clearInterval(intervalId);
-                        setError(job.error || 'Analysis failed');
-                    }
-
-                } catch (e: any) {
-                    console.error("Polling error", e);
-                    if (intervalId) clearInterval(intervalId);
-                    setError(e.message || 'Polling error occurred');
-                }
-            }, 1000);
         };
 
         startAnalysis();
 
-        return () => {
-            if (intervalId) clearInterval(intervalId);
-        };
+        return () => { isMounted = false; };
     }, [searchParams, router, locale]);
 
     if (error) {

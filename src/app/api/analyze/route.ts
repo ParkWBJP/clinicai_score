@@ -1,28 +1,30 @@
 import { NextResponse } from 'next/server';
-import { createJob, updateJob } from '@/lib/jobQueue';
+// import { createJob, updateJob } from '@/lib/jobQueue'; // Removed for streaming
 import { crawlSite } from '@/lib/crawler';
 import { calculateScore } from '@/lib/scoring';
 import { generateAIReport } from '@/lib/ai';
 
 export async function POST(req: Request) {
-    try {
-        const body = await req.json();
-        const { url, hospitalName, address, keywords, locale } = body;
+    const encoder = new TextEncoder();
 
-        const jobId = createJob();
+    const stream = new ReadableStream({
+        async start(controller) {
+            const sendEvent = (data: any) => {
+                controller.enqueue(encoder.encode(JSON.stringify(data) + '\n'));
+            };
 
-        // Start background processing
-        (async () => {
             try {
-                updateJob(jobId, { status: 'processing', progress: 10 });
+                const body = await req.json();
+                const { url, hospitalName, address, keywords, locale } = body;
+
+                sendEvent({ type: 'progress', value: 10, step: 'Crawling' });
 
                 // 1. Crawl
                 const pages = await crawlSite(url, 10);
-                updateJob(jobId, { progress: 50 });
-
                 if (pages.length === 0) {
                     throw new Error("No pages found");
                 }
+                sendEvent({ type: 'progress', value: 50, step: 'Scoring', pagesCount: pages.length });
 
                 // 2. Score
                 const scoreResult = calculateScore(pages, {
@@ -30,11 +32,11 @@ export async function POST(req: Request) {
                     keywords: (keywords || '').split(','),
                     locale: locale || 'ko'
                 });
-                updateJob(jobId, { progress: 70 });
+                sendEvent({ type: 'progress', value: 70, step: 'AI Analysis' });
 
                 // 3. AI Report
                 const aiReport = await generateAIReport(scoreResult, pages, hospitalName, address, (keywords || '').split(','), locale || 'ko');
-                updateJob(jobId, { progress: 90 });
+                sendEvent({ type: 'progress', value: 90, step: 'Finalizing' });
 
                 // Finish
                 const finalResult = {
@@ -43,17 +45,20 @@ export async function POST(req: Request) {
                     pagesAnalyzed: pages.length
                 };
 
-                updateJob(jobId, { status: 'completed', progress: 100, result: finalResult });
+                sendEvent({ type: 'complete', result: finalResult });
+                controller.close();
 
             } catch (err: any) {
-                console.error("Job Failed", err);
-                updateJob(jobId, { status: 'failed', error: err.message, progress: 100 });
+                console.error("Stream Error", err);
+                sendEvent({ type: 'error', message: err.message || 'Analysis failed' });
+                controller.close();
             }
-        })();
+        }
+    });
 
-        return NextResponse.json({ jobId });
-
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to start job' }, { status: 500 });
-    }
+    return new NextResponse(stream, {
+        headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+        }
+    });
 }
