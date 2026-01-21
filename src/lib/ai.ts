@@ -181,6 +181,9 @@ export async function generateAIReport(
             // Some gpt-5 models only support the default temperature; omit it to avoid 400s on Vercel.
             if (!model.startsWith('gpt-5')) {
                 request.temperature = 0.4;
+            } else {
+                // Reduce hidden reasoning tokens to avoid `finish_reason=length` with empty output.
+                (request as any).reasoning_effort = 'low';
             }
 
             const response = await openai.chat.completions.create(request);
