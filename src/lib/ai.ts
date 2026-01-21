@@ -150,19 +150,31 @@ export async function generateAIReport(
     });
 
     try {
-        const response = await openai.chat.completions.create({
+        const request: Parameters<typeof openai.chat.completions.create>[0] = {
             model,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `${instructions}\n\nInput JSON:\n${inputJson}` },
             ],
             response_format: { type: 'json_object' },
-            temperature: 0.4,
             // gpt-5-* uses `max_completion_tokens` (chat.completions) instead of `max_tokens`
             max_completion_tokens: 2000,
+        };
+
+        // Some gpt-5 models only support the default temperature; omit it to avoid 400s on Vercel.
+        if (!model.startsWith('gpt-5')) {
+            request.temperature = 0.4;
+        }
+
+        const response = await openai.chat.completions.create({
+            ...request,
         });
 
-        const content = response.choices[0].message.content;
+        if (!('choices' in response)) {
+            throw new Error('Unexpected streaming response');
+        }
+
+        const content = response.choices[0]?.message?.content;
         if (!content) throw new Error('No content');
 
         const report = safeParseJsonReport(content);
