@@ -89,6 +89,19 @@ function safeParseJsonReport(raw: string): AIReport {
     return parsed as AIReport;
 }
 
+function tryParseJsonReport(raw: string): AIReport {
+    try {
+        return safeParseJsonReport(raw);
+    } catch {
+        const start = raw.indexOf('{');
+        const end = raw.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return safeParseJsonReport(raw.slice(start, end + 1));
+        }
+        throw new Error('Invalid JSON');
+    }
+}
+
 export async function generateAIReport(
     score: ScoreResult,
     pages: PageData[],
@@ -150,34 +163,56 @@ export async function generateAIReport(
     });
 
     try {
-        const request: Parameters<typeof openai.chat.completions.create>[0] = {
-            model,
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: `${instructions}\n\nInput JSON:\n${inputJson}` },
-            ],
-            response_format: { type: 'json_object' },
-            // gpt-5-* uses `max_completion_tokens` (chat.completions) instead of `max_tokens`
-            max_completion_tokens: 2000,
+        const createOnce = async (useResponseFormat: boolean) => {
+            const request: Parameters<typeof openai.chat.completions.create>[0] = {
+                model,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: `${instructions}\n\nInput JSON:\n${inputJson}` },
+                ],
+                // gpt-5-* uses `max_completion_tokens` (chat.completions) instead of `max_tokens`
+                max_completion_tokens: 2000,
+            };
+
+            if (useResponseFormat) {
+                request.response_format = { type: 'json_object' };
+            }
+
+            // Some gpt-5 models only support the default temperature; omit it to avoid 400s on Vercel.
+            if (!model.startsWith('gpt-5')) {
+                request.temperature = 0.4;
+            }
+
+            const response = await openai.chat.completions.create(request);
+
+            if (!('choices' in response)) {
+                throw new Error('Unexpected streaming response');
+            }
+
+            const choice = response.choices?.[0];
+            const content = choice?.message?.content;
+            if (content) return content;
+
+            const finish = (choice as any)?.finish_reason ?? 'unknown';
+            const refusal = (choice as any)?.message?.refusal;
+            const requestId = (response as any)?._request_id;
+            if (refusal) {
+                throw new Error(`Refused: ${refusal}${requestId ? ` (request_id=${requestId})` : ''}`);
+            }
+            throw new Error(`No content (finish_reason=${finish}${requestId ? `, request_id=${requestId}` : ''})`);
         };
 
-        // Some gpt-5 models only support the default temperature; omit it to avoid 400s on Vercel.
-        if (!model.startsWith('gpt-5')) {
-            request.temperature = 0.4;
+        // Primary: strict JSON mode
+        let content = await createOnce(true);
+        let report: AIReport;
+        try {
+            report = tryParseJsonReport(content);
+        } catch {
+            // Retry once without response_format, in case the model returns an empty content in JSON mode.
+            content = await createOnce(false);
+            report = tryParseJsonReport(content);
         }
 
-        const response = await openai.chat.completions.create({
-            ...request,
-        });
-
-        if (!('choices' in response)) {
-            throw new Error('Unexpected streaming response');
-        }
-
-        const content = response.choices[0]?.message?.content;
-        if (!content) throw new Error('No content');
-
-        const report = safeParseJsonReport(content);
         if (pages.length < 3) ensureConservativeNote(report, locale);
         return { report, meta: { status: 'ok' } };
     } catch (error) {
