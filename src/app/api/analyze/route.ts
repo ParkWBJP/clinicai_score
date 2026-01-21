@@ -4,6 +4,8 @@ import { crawlSite } from '@/lib/crawler';
 import { calculateScore } from '@/lib/scoring';
 import { generateAIReport } from '@/lib/ai';
 
+export const runtime = 'nodejs';
+
 export async function POST(req: Request) {
     const encoder = new TextEncoder();
 

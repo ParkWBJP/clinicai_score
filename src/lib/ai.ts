@@ -1,9 +1,11 @@
 import OpenAI from 'openai';
 import { ScoreResult, PageData } from './types';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || 'dummy', // Prevent crash if key missing
-});
+function getOpenAIApiKey(): string | undefined {
+    // Vercel/Next users sometimes (incorrectly) store secrets under NEXT_PUBLIC_*
+    // Support it server-side as a fallback to reduce deployment mismatches.
+    return process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+}
 
 export type AIGenerationStatus = 'ok' | 'missing_key' | 'error';
 
@@ -95,12 +97,18 @@ export async function generateAIReport(
     keywords: string[],
     locale: 'ko' | 'ja'
 ): Promise<AIGenerationResult> {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = getOpenAIApiKey();
+    if (!apiKey) {
         console.warn('OpenAI API Key missing, returning fallback report.');
         const report = getFallbackReport(locale);
         if (pages.length < 3) ensureConservativeNote(report, locale);
-        return { report, meta: { status: 'missing_key', message: 'OPENAI_API_KEY is not set' } };
+        return {
+            report,
+            meta: { status: 'missing_key', message: 'OPENAI_API_KEY is not set (check Vercel Environment Variables and redeploy)' },
+        };
     }
+
+    const openai = new OpenAI({ apiKey });
 
     const systemPrompt = `You are a professional web auditor for Clinic.ai. You analyze hospital websites to improve their patient acquisition efficiency.
     - Tone: Professional, Constructive, "Consulting Report" style. No medical advice.
@@ -209,4 +217,3 @@ function getFallbackReport(locale: 'ko' | 'ja'): AIReport {
         },
     };
 }
-
