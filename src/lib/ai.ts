@@ -150,7 +150,7 @@ export async function generateAIReport(
 
     try {
         const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: 'gpt-5-mini',
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `${instructions}\n\nInput JSON:\n${inputJson}` },
