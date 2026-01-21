@@ -21,10 +21,10 @@ export default function Header() {
             </div>
 
             <nav style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
-                <a href="#" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.about}</a>
-                <a href="#" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.why}</a>
-                <a href="#" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.success}</a>
-                <a href="#" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.solution}</a>
+                <a href="https://clinicai-nu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.about}</a>
+                <a href="https://clinicai-nu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.why}</a>
+                <a href="https://clinicai-nu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.success}</a>
+                <a href="https://clinicai-nu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '15px', fontWeight: 500, color: '#4B5563' }}>{dict.solution}</a>
             </nav>
 
             <div className="actions" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
