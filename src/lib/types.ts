@@ -27,6 +27,12 @@ export interface ScoreCategory {
     faq_schema: number;
 }
 
+export interface ScoreCheckItem {
+    key: string;
+    ok: boolean;
+    label: string;
+}
+
 export interface ScoreResult {
     total: number;
     categories: ScoreCategory;
@@ -37,6 +43,13 @@ export interface ScoreResult {
             validPages: number;
             validRatio: number;
             strongPages: number;
+        };
+        checks?: {
+            relevance: ScoreCheckItem[];
+            structure: ScoreCheckItem[];
+            indexing: ScoreCheckItem[];
+            trust: ScoreCheckItem[];
+            faq_schema: ScoreCheckItem[];
         };
         caps?: {
             totalCap?: number;

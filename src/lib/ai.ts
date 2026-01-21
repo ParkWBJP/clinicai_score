@@ -128,13 +128,16 @@ export async function generateAIReport(
             ? `You must output a single JSON object with keys: overview_summary, overview_clinicai, overview_priorities, card_overviews.
 
 overview_summary (KO, 4~6 sentences, 350~520 characters):
-- Sentence 1 MUST include: total_score/100 and analyzed_pages_count/max_pages (e.g., "총점 62/100, 분석 10/10페이지").
-- In the body, you MUST mention all 5 categories at least once AND include each category score in the format "관련성 16/20" etc.
-- Include 2 observable cues from top_findings (title/h1/text_snippet). Mark them naturally as "관찰된 단서" (short quote or phrase). No invented facts.
-- Last sentence: constructive opportunity tone (improve exposure/consult conversions), no blaming.
+- Sentence 1 MUST include total_score/100 and analyzed_pages_count/max_pages AND frame the overall judgement in terms of "AI 검색 노출 가능성".
+- Sentences 2~4 MUST be report-style narrative (no bullet/listing of categories). Explain 1~2 strengths + 1~2 risks by connecting cause -> impact.
+- Every sentence MUST naturally include at least one category score (e.g., "관련성 16/20"). Across the whole summary, you MUST reference all 5 categories at least once:
+  - 관련성 / 콘텐츠 구조화 / AI 검색 노출 신호 / 신뢰 신호(의료 정보) / FAQ/스키마
+- Include 1~2 short "관찰 단서" that are DIRECTLY supported by top_findings.title/h1/text_snippet. Do not invent facts.
+- Last sentence MUST end with an opportunity/cost-of-delay tone tied to this site's weaker areas (노출/상담 전환 기회). Avoid generic boilerplate.
 - If valid_pages_count < 5 OR valid_ratio < 0.5, include exactly 1 sentence: "수집/본문 근거가 제한되어 일부 평가는 보수적으로 작성되었습니다."
 
-overview_clinicai (KO, 1 sentence): Mention Clinic.ai and the expected business impact (reach/cost).
+overview_clinicai (KO, 1 sentence):
+- Mention Clinic.ai and connect it naturally to ONE low-scoring category (choose the lowest from category_scores) as the reason.
 
 overview_priorities (KO, array of 3 strings, each 30~55 chars):
 - Prioritize the lowest category_scores first.
@@ -151,13 +154,16 @@ card_overviews (KO, object with 5 keys):
             : `You must output a single JSON object with keys: overview_summary, overview_clinicai, overview_priorities, card_overviews.
 
 overview_summary (JA, 4~6 sentences, 220~320 characters):
-- Sentence 1 MUST include: total_score/100 and analyzed_pages_count/max_pages.
-- You MUST mention all 5 categories at least once AND include each category score in the format "関連性 16/20" etc.
-- Include 2 observable cues from top_findings (title/h1/text_snippet). Mark them as observed cues. No invented facts.
-- Last sentence: constructive opportunity tone (exposure/consult conversions), no blaming.
+- Sentence 1 MUST include total_score/100 and analyzed_pages_count/max_pages and frame the judgement in terms of AI search exposure potential.
+- Sentences 2~4 MUST be report-style narrative (no listing of categories). Explain 1~2 strengths + 1~2 risks with cause -> impact.
+- Every sentence MUST include at least one category score. Across the whole summary, reference all 5 categories at least once:
+  - 関連性 / 構造化 / AI検索露出シグナル / 信頼性(医療情報) / FAQ/スキーマ
+- Include 1~2 observed cues directly supported by top_findings.title/h1/text_snippet. No invented facts.
+- Last sentence MUST end with an opportunity tone tied to weaker areas (exposure/consult conversions). Avoid generic boilerplate.
 - If valid_pages_count < 5 OR valid_ratio < 0.5, include exactly 1 sentence: "取得/本文の根拠が限られるため、一部は保守的に記載しています。"
 
-overview_clinicai (JA, 1 sentence): Mention Clinic.ai and business impact.
+overview_clinicai (JA, 1 sentence):
+- Mention Clinic.ai and connect it naturally to ONE low-scoring category (choose the lowest from category_scores) as the reason.
 
 overview_priorities (JA, array of 3 strings, each ~30~55 chars):
 - Prioritize the lowest category_scores first.

@@ -38,9 +38,9 @@ export const translations = {
             categories: {
                 relevance: "진료과목 정합성",
                 structure: "콘텐츠 구조화",
-                indexing: "메타/인덱싱 위생",
+                indexing: "AI 검색 노출 신호",
                 trust: "신뢰 신호(의료 정보)",
-                faq_schema: "FAQ·스키마 준비도"
+                faq_schema: "FAQ/스키마"
             },
             check_labels: {
                 title_keyword: "Title에 진료과목 포함",
@@ -87,9 +87,9 @@ export const translations = {
             categories: {
                 relevance: "診療科目の整合性",
                 structure: "コンテンツの構造化",
-                indexing: "メタ/インデックス衛生",
+                indexing: "AI検索露出シグナル",
                 trust: "信頼性シグナル(医療情報)",
-                faq_schema: "FAQ・スキーマ準備度"
+                faq_schema: "FAQ/スキーマ"
             },
             check_labels: {
                 title_keyword: "Titleに診療科目を含む",

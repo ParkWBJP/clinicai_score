@@ -50,6 +50,9 @@ function ResultContent() {
 
     const { score, ai, aiMeta, pagesAnalyzed } = data;
 
+    const categoryKeys: Array<keyof ScoreResult['categories']> = ['relevance', 'structure', 'indexing', 'trust', 'faq_schema'];
+    const fallbackCheckLabel = locale === 'ko' ? '근거 제한' : '根拠が限定的';
+
     const categoryScores = [
         { subject: dict.categories.relevance, A: score.categories.relevance, fullMark: 20 },
         { subject: dict.categories.structure, A: score.categories.structure, fullMark: 20 },
@@ -236,15 +239,20 @@ function ResultContent() {
                             </p>
 
                             <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#374151' }}>
-                                    {/* Placeholder Logic for Checks - ideally comes from `details` signals */}
-                                    {cat.A > 5 ? <CheckCircle size={14} color="#10B981" /> : <XCircle size={14} color="#EF4444" />}
-                                    <span>{locale === 'ko' ? "기본 기준 충족" : "基本基準の充足"}</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#374151' }}>
-                                    {cat.A > 15 ? <CheckCircle size={14} color="#10B981" /> : <XCircle size={14} color="#EF4444" />}
-                                    <span>{locale === 'ko' ? "최적화 양호" : "最適化良好"}</span>
-                                </div>
+                                {(() => {
+                                    const key = categoryKeys[idx];
+                                    const checks = score.details.checks?.[key] ?? [];
+                                    const normalized = checks.length >= 4
+                                        ? checks.slice(0, 4)
+                                        : [...checks, ...Array.from({ length: 4 - checks.length }, (_, i) => ({ key: `fallback_${i}`, ok: false, label: fallbackCheckLabel }))];
+
+                                    return normalized.map((item) => (
+                                        <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#374151' }}>
+                                            {item.ok ? <CheckCircle size={14} color="#10B981" /> : <XCircle size={14} color="#EF4444" />}
+                                            <span>{item.label}</span>
+                                        </div>
+                                    ));
+                                })()}
                             </div>
                         </motion.div>
                     ))}
