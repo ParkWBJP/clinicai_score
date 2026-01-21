@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { CheckCircle, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { ScoreResult } from '@/lib/types';
-import { AIReport } from '@/lib/ai';
+import { AIReport, AIGenerationMeta } from '@/lib/ai';
 
 function ResultContent() {
     const searchParams = useSearchParams();
@@ -20,7 +20,7 @@ function ResultContent() {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [data, setData] = useState<{ score: ScoreResult; ai: AIReport; pagesAnalyzed: number } | null>(null);
+    const [data, setData] = useState<{ score: ScoreResult; ai: AIReport; aiMeta?: AIGenerationMeta; pagesAnalyzed: number } | null>(null);
     const [viewScore, setViewScore] = useState(0);
 
     useEffect(() => {
@@ -48,7 +48,7 @@ function ResultContent() {
     if (error) return <div className="container" style={{ padding: '80px', textAlign: 'center', color: 'red' }}>{error}</div>;
     if (!data) return null;
 
-    const { score, ai, pagesAnalyzed } = data;
+    const { score, ai, aiMeta, pagesAnalyzed } = data;
 
     const categoryScores = [
         { subject: dict.categories.relevance, A: score.categories.relevance, fullMark: 20 },
@@ -75,6 +75,29 @@ function ResultContent() {
             </div>
 
             <div className="container" style={{ marginTop: '40px' }}>
+
+                {aiMeta?.status && aiMeta.status !== 'ok' && (
+                    <div
+                        className="card"
+                        style={{
+                            padding: '12px 16px',
+                            marginBottom: '20px',
+                            borderColor: '#F59E0B',
+                            background: '#FFFBEB'
+                        }}
+                    >
+                        <p style={{ margin: 0, fontSize: '13px', color: '#92400E', fontWeight: 600 }}>
+                            {locale === 'ko'
+                                ? 'AI 요약 생성이 제한되어 규칙 기반 결과 중심으로 표시됩니다.'
+                                : 'AI要約の生成が制限されているため、ルールベースの結果を中心に表示します。'}
+                        </p>
+                        {aiMeta.message && (
+                            <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#92400E' }}>
+                                {aiMeta.message}
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {/* Top Section: Score & Radar */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '40px' }}>
@@ -144,20 +167,43 @@ function ResultContent() {
                 </div>
 
                 {/* AI Overview */}
+                {/* AI Overview */}
                 <motion.div
                     className="card"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5, delay: 0.4 }}
-                    style={{ marginBottom: '40px', borderLeft: '4px solid #2563EB', background: '#F0F9FF', border: 'none' }}
+                    style={{ marginBottom: '40px', borderLeft: '4px solid #2563EB', background: '#F0F9FF', border: 'none', padding: '24px' }}
                 >
-                    <div style={{ padding: '24px' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1E40AF', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <MessageSquare size={20} /> AI Analysis Overview
-                        </h3>
-                        <p style={{ fontSize: '16px', lineHeight: '1.7', color: '#374151' }}>
-                            {ai.overview_100}
+                    <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1E40AF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <MessageSquare size={20} /> AI Analysis Overview
+                    </h3>
+
+                    {/* 1. Summary */}
+                    <p style={{ fontSize: '15px', lineHeight: '1.7', color: '#374151', marginBottom: '20px' }}>
+                        {ai.overview_summary}
+                    </p>
+
+                    {/* 2. Divider & Clinic.ai Insight */}
+                    <div style={{ borderTop: '1px dashed #BFDBFE', margin: '16px 0', paddingTop: '16px' }}>
+                        <p style={{ fontSize: '15px', fontWeight: 600, color: '#1D4ED8', display: 'flex', gap: '8px' }}>
+                            <span style={{ fontSize: '18px' }}>💡</span>
+                            {ai.overview_clinicai}
                         </p>
+                    </div>
+
+                    {/* 3. Priorities */}
+                    <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.6)', padding: '16px', borderRadius: '8px' }}>
+                        <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#4B5563', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Top 3 Priorities
+                        </h4>
+                        <ol style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {ai.overview_priorities?.map((p, i) => (
+                                <li key={i} style={{ fontSize: '14px', fontWeight: 500, color: '#1F2937' }}>
+                                    {p}
+                                </li>
+                            ))}
+                        </ol>
                     </div>
                 </motion.div>
 

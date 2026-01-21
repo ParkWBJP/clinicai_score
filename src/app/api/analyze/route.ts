@@ -35,13 +35,21 @@ export async function POST(req: Request) {
                 sendEvent({ type: 'progress', value: 70, step: 'AI Analysis' });
 
                 // 3. AI Report
-                const aiReport = await generateAIReport(scoreResult, pages, hospitalName, address, (keywords || '').split(','), locale || 'ko');
+                const { report: aiReport, meta: aiMeta } = await generateAIReport(
+                    scoreResult,
+                    pages,
+                    hospitalName,
+                    address,
+                    (keywords || '').split(','),
+                    locale || 'ko'
+                );
                 sendEvent({ type: 'progress', value: 90, step: 'Finalizing' });
 
                 // Finish
                 const finalResult = {
                     score: scoreResult,
                     ai: aiReport,
+                    aiMeta,
                     pagesAnalyzed: pages.length
                 };
 
