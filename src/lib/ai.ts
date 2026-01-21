@@ -32,6 +32,10 @@ export interface AIGenerationResult {
     meta: AIGenerationMeta;
 }
 
+function normalizeText(text: string): string {
+    return (text || '').replace(/\s+/g, ' ').trim();
+}
+
 function buildTextSnippet(text: string, keywords: string[]): string {
     const normalized = (text || '').replace(/\s+/g, ' ').trim();
     if (!normalized) return '';
@@ -69,17 +73,6 @@ function buildTextSnippet(text: string, keywords: string[]): string {
     return normalized.slice(0, Math.min(normalized.length, maxLen));
 }
 
-function ensureConservativeNote(report: AIReport, locale: 'ko' | 'ja') {
-    const note =
-        locale === 'ko'
-            ? '일부 페이지는 사이트 제한으로 수집되지 않아 결과는 보수적으로 산정되었습니다.'
-            : '一部ページはサイト側の制限により取得できず、結果は保守的に算出しています。';
-
-    if (!report.overview_summary.includes(note)) {
-        report.overview_summary = `${report.overview_summary.trim()} ${note}`.trim();
-    }
-}
-
 function safeParseJsonReport(raw: string): AIReport {
     const parsed = JSON.parse(raw) as Partial<AIReport>;
     if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON');
@@ -114,7 +107,6 @@ export async function generateAIReport(
     if (!apiKey) {
         console.warn('OpenAI API Key missing, returning fallback report.');
         const report = getFallbackReport(locale);
-        if (pages.length < 3) ensureConservativeNote(report, locale);
         return {
             report,
             meta: { status: 'missing_key', message: 'OPENAI_API_KEY is not set (check Vercel Environment Variables and redeploy)' },
@@ -133,18 +125,52 @@ export async function generateAIReport(
 
     const instructions =
         locale === 'ko'
-            ? `1. overview_summary (2~3 sentences): Summarize the site health based on 5 categories (Relevance, Structure, Indexing, Trust, FAQ). Focus on "opportunities to gain" if fixed.
-        - Make it feel like you actually read the site by reflecting 1~2 concrete cues from text_snippet(s) or page titles/H1.
-        - Do NOT invent facts beyond snippet/signals/scores.
-    2. overview_clinicai (1 sentence): A persuasive sentence starting or ending with "Clinic.ai" context, emphasizing that optimization will lead to better patient reach or lower costs.
-    3. overview_priorities (Array of 3 strings): 3 most impactful actions. Each 30-55 chars. Imperative/Action-oriented. Sorted by impact.
-    4. card_overviews (Object with 5 keys): Brief 1-sentence assessment for each category.`
-            : `1. overview_summary (2~3 sentences): Based on 5 categories (Relevance, Structure, Indexing, Trust, FAQ), summarize site health and emphasize opportunities gained by fixing issues.
-        - Make it feel like you actually read the site by reflecting 1~2 concrete cues from text_snippet(s) or page titles/H1.
-        - Do NOT invent facts beyond snippet/signals/scores.
-    2. overview_clinicai (1 sentence): A persuasive sentence referencing Clinic.ai, emphasizing improved patient reach or lower costs.
-    3. overview_priorities (Array of 3 strings): 3 most impactful actions. Each ~30-55 chars. Imperative/action-oriented. Sorted by impact.
-    4. card_overviews (Object with 5 keys): Brief 1-sentence assessment for each category.`;
+            ? `You must output a single JSON object with keys: overview_summary, overview_clinicai, overview_priorities, card_overviews.
+
+overview_summary (KO, 4~6 sentences, 350~520 characters):
+- Sentence 1 MUST include: total_score/100 and analyzed_pages_count/max_pages (e.g., "총점 62/100, 분석 10/10페이지").
+- In the body, you MUST mention all 5 categories at least once AND include each category score in the format "관련성 16/20" etc.
+- Include 2 observable cues from top_findings (title/h1/text_snippet). Mark them naturally as "관찰된 단서" (short quote or phrase). No invented facts.
+- Last sentence: constructive opportunity tone (improve exposure/consult conversions), no blaming.
+- If valid_pages_count < 5 OR valid_ratio < 0.5, include exactly 1 sentence: "수집/본문 근거가 제한되어 일부 평가는 보수적으로 작성되었습니다."
+
+overview_clinicai (KO, 1 sentence): Mention Clinic.ai and the expected business impact (reach/cost).
+
+overview_priorities (KO, array of 3 strings, each 30~55 chars):
+- Prioritize the lowest category_scores first.
+- Use imperative/action style.
+- Prefer strong-signal improvements when relevant (FAQPage JSON-LD, Medical/Organization schema, 부작용/주의 섹션, 원인-증상-치료 흐름).
+
+card_overviews (KO, object with 5 keys):
+- Each value MUST be 1 sentence.
+- Tone by score range (no contradictions):
+  - 16~20: 강점/충족/유지
+  - 11~15: 보통/개선 여지
+  - 0~10: 부족/우선 개선
+- If you can, reflect 1 short cue from signals or top_findings; otherwise state "근거 제한" briefly.`
+            : `You must output a single JSON object with keys: overview_summary, overview_clinicai, overview_priorities, card_overviews.
+
+overview_summary (JA, 4~6 sentences, 220~320 characters):
+- Sentence 1 MUST include: total_score/100 and analyzed_pages_count/max_pages.
+- You MUST mention all 5 categories at least once AND include each category score in the format "関連性 16/20" etc.
+- Include 2 observable cues from top_findings (title/h1/text_snippet). Mark them as observed cues. No invented facts.
+- Last sentence: constructive opportunity tone (exposure/consult conversions), no blaming.
+- If valid_pages_count < 5 OR valid_ratio < 0.5, include exactly 1 sentence: "取得/本文の根拠が限られるため、一部は保守的に記載しています。"
+
+overview_clinicai (JA, 1 sentence): Mention Clinic.ai and business impact.
+
+overview_priorities (JA, array of 3 strings, each ~30~55 chars):
+- Prioritize the lowest category_scores first.
+- Imperative/action style.
+- Prefer strong-signal improvements when relevant (FAQPage schema, Medical/Organization schema, 副作用/注意, 原因-症状-治療の流れ).
+
+card_overviews (JA, object with 5 keys):
+- Each value MUST be 1 sentence.
+- Tone by score range (no contradictions):
+  - 16~20: 強み/維持
+  - 11~15: 標準/改善余地
+  - 0~10: 不足/優先改善
+- If you can, reflect 1 short cue from signals or top_findings; otherwise mention evidence limitation briefly.`;
 
     const top_findings = pages.slice(0, 6).map(p => ({
         title: p.title,
@@ -154,9 +180,17 @@ export async function generateAIReport(
         text_snippet: buildTextSnippet(p.bodyText, keywords),
     }));
 
+    const validPagesCount = score.details.metrics?.validPages ?? pages.filter(p => normalizeText(p.bodyText).length >= 400).length;
+    const validRatio = score.details.metrics?.validRatio ?? (pages.length ? validPagesCount / pages.length : 0);
+
     const inputJson = JSON.stringify({
         user_input: { hospital_name: hospitalName, address, keywords },
-        analysis_meta: { analyzed_pages_count: pages.length, max_pages: 10 },
+        analysis_meta: {
+            analyzed_pages_count: pages.length,
+            max_pages: 10,
+            valid_pages_count: validPagesCount,
+            valid_ratio: Number(validRatio.toFixed(3)),
+        },
         signals: score.details.signals,
         scores: { total_score: score.total, category_scores: score.categories },
         top_findings,
@@ -216,12 +250,10 @@ export async function generateAIReport(
             report = tryParseJsonReport(content);
         }
 
-        if (pages.length < 3) ensureConservativeNote(report, locale);
         return { report, meta: { status: 'ok' } };
     } catch (error) {
         console.error('AI Generation Failed:', error);
         const report = getFallbackReport(locale);
-        if (pages.length < 3) ensureConservativeNote(report, locale);
         return {
             report,
             meta: { status: 'error', message: error instanceof Error ? error.message : 'AI generation failed' },

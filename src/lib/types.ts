@@ -32,6 +32,16 @@ export interface ScoreResult {
     categories: ScoreCategory;
     details: {
         signals: string[];
-        // Add more detailed breakdown if needed
+        metrics?: {
+            pagesAnalyzed: number;
+            validPages: number;
+            validRatio: number;
+            strongPages: number;
+        };
+        caps?: {
+            totalCap?: number;
+            indexingCap?: number;
+            trustCap?: number;
+        };
     }
 }
