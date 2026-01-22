@@ -53,30 +53,33 @@ function LoadingContent() {
 
                     for (const line of lines) {
                         if (!line.trim()) continue;
+                        let data: any;
                         try {
-                            const data = JSON.parse(line);
-
-                            if (data.type === 'progress') {
-                                if (isMounted) {
-                                    setProgress(data.value);
-                                    if (data.pagesCount) setPagesCount(data.pagesCount);
-
-                                    // Update steps based on progress
-                                    if (data.value < 40) setCurrentStep(0);
-                                    else if (data.value < 70) setCurrentStep(1);
-                                    else if (data.value < 90) setCurrentStep(2);
-                                    else setCurrentStep(3);
-                                }
-                            } else if (data.type === 'complete') {
-                                // Save result to storage to pass to Result page without large URL
-                                sessionStorage.setItem('analysisResult', JSON.stringify(data.result));
-                                router.replace('/result'); // Use replace to prevent going back to loading
-                                return;
-                            } else if (data.type === 'error') {
-                                throw new Error(data.message);
-                            }
+                            data = JSON.parse(line);
                         } catch (e) {
                             console.error("Parse error", e);
+                            continue;
+                        }
+
+                        if (data.type === 'progress') {
+                            if (isMounted) {
+                                setProgress(data.value);
+                                if (data.pagesCount) setPagesCount(data.pagesCount);
+
+                                // Update steps based on progress
+                                if (data.value < 40) setCurrentStep(0);
+                                else if (data.value < 70) setCurrentStep(1);
+                                else if (data.value < 90) setCurrentStep(2);
+                                else setCurrentStep(3);
+                            }
+                        } else if (data.type === 'complete') {
+                            // Save result to storage to pass to Result page without large URL
+                            sessionStorage.setItem('analysisResult', JSON.stringify(data.result));
+                            router.replace('/result'); // Use replace to prevent going back to loading
+                            return;
+                        } else if (data.type === 'error') {
+                            if (isMounted) setError(data.message || 'Error occurred');
+                            return;
                         }
                     }
                 }

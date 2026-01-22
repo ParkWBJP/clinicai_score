@@ -41,7 +41,11 @@ export async function POST(req: Request) {
                 // 1. Crawl
                 const pages = await crawlSite(url, 10);
                 if (pages.length === 0) {
-                    throw new Error("No pages found");
+                    const msg =
+                        (locale || 'ko') === 'ja'
+                            ? 'ページを取得できませんでした。サイト側の制限(ボット対策)やJS描画により取得できない可能性があります。'
+                            : '페이지를 가져오지 못했습니다. 사이트의 봇 차단 또는 JS 렌더링으로 인해 수집이 제한될 수 있습니다.';
+                    throw new Error(msg);
                 }
                 sendEvent({ type: 'progress', value: 50, step: 'Scoring', pagesCount: pages.length });
 
