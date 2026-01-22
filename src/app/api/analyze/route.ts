@@ -3,8 +3,25 @@ import { NextResponse } from 'next/server';
 import { crawlSite } from '@/lib/crawler';
 import { calculateScore } from '@/lib/scoring';
 import { generateAIReport } from '@/lib/ai';
+import { classifySite } from '@/lib/siteClassification';
 
 export const runtime = 'nodejs';
+
+function applyUncertainPenalty(score: ReturnType<typeof calculateScore>) {
+    const factor = 0.85;
+    const categories = {
+        relevance: Math.floor(score.categories.relevance * factor),
+        structure: Math.floor(score.categories.structure * factor),
+        indexing: Math.floor(score.categories.indexing * factor),
+        trust: Math.floor(score.categories.trust * factor),
+        faq_schema: Math.floor(score.categories.faq_schema * factor),
+    };
+    return {
+        ...score,
+        total: categories.relevance + categories.structure + categories.indexing + categories.trust + categories.faq_schema,
+        categories,
+    };
+}
 
 export async function POST(req: Request) {
     const encoder = new TextEncoder();
@@ -28,23 +45,34 @@ export async function POST(req: Request) {
                 }
                 sendEvent({ type: 'progress', value: 50, step: 'Scoring', pagesCount: pages.length });
 
+                const siteClassification = classifySite(pages, locale || 'ko');
+
                 // 2. Score
-                const scoreResult = calculateScore(pages, {
+                let scoreResult = calculateScore(pages, {
                     hospitalName,
                     keywords: (keywords || '').split(','),
                     locale: locale || 'ko'
                 });
+                if (siteClassification.level === 'uncertain') {
+                    scoreResult = applyUncertainPenalty(scoreResult);
+                }
                 sendEvent({ type: 'progress', value: 70, step: 'AI Analysis' });
 
                 // 3. AI Report
-                const { report: aiReport, meta: aiMeta } = await generateAIReport(
-                    scoreResult,
-                    pages,
-                    hospitalName,
-                    address,
-                    (keywords || '').split(','),
-                    locale || 'ko'
-                );
+                let aiReport: any = null;
+                let aiMeta: any = { status: 'skipped', message: 'AI generation skipped' };
+                if (siteClassification.level !== 'no') {
+                    const result = await generateAIReport(
+                        scoreResult,
+                        pages,
+                        hospitalName,
+                        address,
+                        (keywords || '').split(','),
+                        locale || 'ko'
+                    );
+                    aiReport = result.report;
+                    aiMeta = result.meta;
+                }
                 sendEvent({ type: 'progress', value: 90, step: 'Finalizing' });
 
                 // Finish
@@ -52,7 +80,8 @@ export async function POST(req: Request) {
                     score: scoreResult,
                     ai: aiReport,
                     aiMeta,
-                    pagesAnalyzed: pages.length
+                    pagesAnalyzed: pages.length,
+                    siteClassification
                 };
 
                 sendEvent({ type: 'complete', result: finalResult });

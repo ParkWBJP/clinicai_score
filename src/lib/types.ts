@@ -33,6 +33,14 @@ export interface ScoreCheckItem {
     label: string;
 }
 
+export interface SiteClassification {
+    isHospital: boolean;
+    level: 'yes' | 'uncertain' | 'no';
+    evidenceScore: number; // 0~10
+    evidence: string[]; // debug only (not shown by default)
+    validPages: number; // pages used for classification
+}
+
 export interface ScoreResult {
     total: number;
     categories: ScoreCategory;

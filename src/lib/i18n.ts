@@ -35,6 +35,15 @@ export const translations = {
             analyzed_pages: "분석 페이지 수",
             cta_title: "Clinic.ai를 통해 AI검색을 빠르게 선점하세요.",
             cta_btn: "상담 문의하기",
+            uncertain_badge: "병원 사이트 신호가 일부 부족하여 결과가 보수적으로 산정될 수 있습니다.",
+            not_hospital: {
+                title: "병원/클리닉 사이트로 확인되지 않습니다",
+                body: "분석한 페이지에서 병원/클리닉 사이트를 나타내는 신호가 충분하지 않습니다. 입력한 URL이 병원 공식 홈페이지인지 확인해 주세요.",
+                hint: "병원 사이트라면 보통 ‘진료/예약/의료진/오시는길’ 정보가 포함된 페이지가 확인됩니다.",
+                note: "URL 확인이 필요하신가요? Clinic.ai가 무료로 확인해 드립니다.",
+                primary: "다시 입력하기",
+                secondary: "상담 문의하기"
+            },
             categories: {
                 relevance: "진료과목 정합성",
                 structure: "콘텐츠 구조화",
@@ -84,6 +93,15 @@ export const translations = {
             analyzed_pages: "分析ページ数",
             cta_title: "Clinic.aiでAI検索をいち早く先取りしましょう。",
             cta_btn: "相談・お問い合わせ",
+            uncertain_badge: "病院サイトのシグナルが一部不足しているため、結果は保守的になる可能性があります。",
+            not_hospital: {
+                title: "病院・クリニックサイトとして確認できません",
+                body: "取得したページから、病院・クリニックサイトを示すシグナルが十分ではありません。入力URLが公式サイトかご確認ください。",
+                hint: "通常は『診療/予約/医師/アクセス』情報が確認できます。",
+                note: "URLの確認が必要ですか？Clinic.aiが無料で確認します。",
+                primary: "入力し直す",
+                secondary: "相談・お問い合わせ"
+            },
             categories: {
                 relevance: "診療科目の整合性",
                 structure: "コンテンツの構造化",

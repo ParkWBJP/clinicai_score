@@ -7,7 +7,7 @@ function getOpenAIApiKey(): string | undefined {
     return process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
 }
 
-export type AIGenerationStatus = 'ok' | 'missing_key' | 'error';
+export type AIGenerationStatus = 'ok' | 'missing_key' | 'error' | 'skipped';
 
 export interface AIGenerationMeta {
     status: AIGenerationStatus;

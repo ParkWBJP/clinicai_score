@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { translations } from '@/lib/i18n';
 import { motion } from 'framer-motion';
@@ -10,17 +10,18 @@ import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { CheckCircle, XCircle, MessageSquare, Loader2 } from 'lucide-react';
-import { ScoreResult } from '@/lib/types';
+import { ScoreResult, SiteClassification } from '@/lib/types';
 import { AIReport, AIGenerationMeta } from '@/lib/ai';
 
 function ResultContent() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const { locale } = useLanguage();
     const dict = translations[locale].result;
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [data, setData] = useState<{ score: ScoreResult; ai: AIReport; aiMeta?: AIGenerationMeta; pagesAnalyzed: number } | null>(null);
+    const [data, setData] = useState<{ score: ScoreResult; ai: AIReport | null; aiMeta?: AIGenerationMeta; pagesAnalyzed: number; siteClassification?: SiteClassification } | null>(null);
     const [viewScore, setViewScore] = useState(0);
 
     useEffect(() => {
@@ -48,7 +49,46 @@ function ResultContent() {
     if (error) return <div className="container" style={{ padding: '80px', textAlign: 'center', color: 'red' }}>{error}</div>;
     if (!data) return null;
 
-    const { score, ai, aiMeta, pagesAnalyzed } = data;
+    const { score, ai, aiMeta, pagesAnalyzed, siteClassification } = data;
+
+    if (siteClassification?.level === 'no') {
+        return (
+            <div style={{ minHeight: 'calc(100vh - 70px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 16px' }}>
+                <div className="card" style={{ maxWidth: '760px', width: '100%', padding: '32px 24px', textAlign: 'center' }}>
+                    <h1 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '12px', color: '#111827' }}>
+                        {dict.not_hospital.title}
+                    </h1>
+                    <p style={{ margin: '0 0 10px', fontSize: '14px', color: '#374151', lineHeight: '1.6' }}>
+                        {dict.not_hospital.body}
+                    </p>
+                    <p style={{ margin: '0 0 18px', fontSize: '13px', color: '#6B7280', lineHeight: '1.6' }}>
+                        {dict.not_hospital.hint}
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <button className="btn-primary" style={{ padding: '12px 18px' }} onClick={() => router.replace('/') }>
+                            {dict.not_hospital.primary}
+                        </button>
+                        <a
+                            className="btn-primary"
+                            style={{ padding: '12px 18px', background: '#111827' }}
+                            href="https://clinicai-nu.vercel.app/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {dict.not_hospital.secondary}
+                        </a>
+                    </div>
+
+                    <p style={{ margin: '16px 0 0', fontSize: '13px', color: '#2563EB', fontWeight: 600 }}>
+                        {dict.not_hospital.note}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!ai) return <div className="container" style={{ padding: '80px', textAlign: 'center', color: 'red' }}>AI result missing</div>;
 
     const categoryKeys: Array<keyof ScoreResult['categories']> = ['relevance', 'structure', 'indexing', 'trust', 'faq_schema'];
     const fallbackCheckLabel = locale === 'ko' ? '근거 제한' : '根拠が限定的';
@@ -78,6 +118,22 @@ function ResultContent() {
             </div>
 
             <div className="container" style={{ marginTop: '40px' }}>
+
+                {siteClassification?.level === 'uncertain' && (
+                    <div
+                        className="card"
+                        style={{
+                            padding: '12px 16px',
+                            marginBottom: '14px',
+                            borderColor: '#93C5FD',
+                            background: '#EFF6FF'
+                        }}
+                    >
+                        <p style={{ margin: 0, fontSize: '13px', color: '#1E40AF', fontWeight: 600 }}>
+                            {dict.uncertain_badge}
+                        </p>
+                    </div>
+                )}
 
                 {aiMeta?.status && aiMeta.status !== 'ok' && (
                     <div
