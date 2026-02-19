@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
     title: 'Clinic.ai - AIO Diagnostic Tool',
     description: 'Analyze your clinic\'s online presence with AI-powered insights.',
+    icons: {
+        icon: '/icon.svg',
+    },
 };
 
 export default function RootLayout({
